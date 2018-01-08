@@ -333,11 +333,46 @@ void leerMemoria(){
 }
 
 void jugar(){
-	while(1){
-		clear();
-		panelSuperior();
-		panelInferior();
-		panelCentral();
+	while(TRUE){
+		if(rol == 1){
+			datos->j1 = TRUE;
+			while(datos->j2){
+				if(datos->turno == 2){
+					datos->j1 = FALSE;
+					while(datos->turno == 2){
+
+					}
+					datos->j1 = TRUE;
+				}
+			}
+			clear();
+			panelSuperior();
+			panelInferior();
+			panelCentral();
+
+			datos->turno = 2;
+			datos->j1 = FALSE;
+		}else{
+			datos->j2 = TRUE;
+			while(datos->j1){
+				if(datos->turno == 1){
+					datos->j2 = FALSE;
+					while(datos->turno == 1){
+
+					}
+					datos->j2 = TRUE;
+				}
+			}
+			clear();
+			panelSuperior();
+			panelInferior();
+			panelCentral();
+
+			datos->turno = 1;
+			datos->j2 = FALSE;
+		}
+
+
 		usleep(100000);
 	}
 }
