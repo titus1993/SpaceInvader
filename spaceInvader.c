@@ -19,7 +19,7 @@
 #define SPACE_HORIZONTAL 21
 #define SPACE_VERTICAL 7
 #define FILEKEY "/bin/cat"
-#define KEY 1303
+#define KEY 1300
 
 #define MAXBUF 10
 
@@ -68,7 +68,6 @@ typedef struct{
   objeto *tablero[12][14];
 	objeto *balas[12][14];
 }juego;
-
 
 juego *datos;
 int x = 0, y = 0;
@@ -204,13 +203,12 @@ void imprimirCentradoEntero(int posX, int posY, int entero){
 }
 
 void crearMemoria(){
-	int key = ftok(FILEKEY, KEY);
-	int id_zone = shmget (key, sizeof(int)*MAXBUF, 0777 | IPC_CREAT);
+	key_t key = ftok(FILEKEY, KEY);
+	int id_zone = shmget (key, sizeof(juego *), 0777 | IPC_CREAT);
 
 	juego *buffer;
-	buffer = shmat (id_zone, (char *)0, 0);
+	buffer = (juego *)shmat (id_zone, NULL, 0);
 
-  objeto tablero[12][14];
 
 	buffer->j1 = FALSE;
 	buffer->j2 = FALSE;
@@ -328,10 +326,10 @@ void crearMemoria(){
 
 void leerMemoria(){
 	/* Key to shared memory */
-   int key = ftok(FILEKEY, KEY);
+   key_t key = ftok(FILEKEY, KEY);
    /* we create the shared memory */
-   int id_zone = shmget (key, sizeof(int)*MAXBUF, 0777 | IPC_CREAT);
-   datos = shmat (id_zone, (char *)0, 0);
+   int id_zone = shmget (key, sizeof(juego *), 0777);
+   datos = (juego *)shmat (id_zone, NULL, 0);
 }
 
 void jugar(){
@@ -535,10 +533,32 @@ void panelCentral(){
 	int posX = 21;
 	int posY = 7;
 	int i, j;
+
 	for(i = 0; i < 12; i++){
 		 for(j = 0; j < 14; j++){
 			 if(datos->tablero[i][j] != NULL){
-				 imprimirNormalEntero(i*5 + posX, j + posY, datos->tablero[i][j]->tipo);
+				 switch(datos->tablero[i][j]->tipo){
+					 case 1:
+					 	imprimirNormal(i*5 + posX, j + posY, "\\-1-/");
+					 	break;
+
+					 case 2:
+					 	imprimirNormal(i*5 + posX, j + posY, "\\-2-/");
+					 	break;
+
+					 case 3:
+					 	imprimirNormal(i*5 + posX, j + posY, "\\-3-/");
+					 	break;
+
+					 case 4:
+					 	imprimirNormal(i*5 + posX, j + posY, "\\-4-/");
+					 	break;
+
+					 case 5:
+						 imprimirNormal(i*5 + posX, j + posY, "\\-.-/");
+						 break;
+				 }
+				 //imprimirNormal(i*5 + posX, j + posY, "h");
 			 }
 		 }
 	}
