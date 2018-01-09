@@ -12,6 +12,7 @@
 #include <errno.h>
 #include <sys/shm.h> /* shm*  */
 
+#include <pthread.h>
 
 #define DELAY 300000
 #define MAX_X 102
@@ -85,7 +86,28 @@ int Id_SemaforoJ2;
 struct sembuf Operacion;
 //juego * datos;
 
+void *funcionThread (void *parametro)
+{
+	int contador = 0;
+   /* Bucle infinito para decrementar contador y mostrarlo en pantalla. */
+	while (1)
+	{
+		datos->segundos++;
+		if(datos->segundos == 60){
+			datos->minutos++;
+			datos->segundos = 0;
+		}
+		usleep(1000000);
+	}
+}
 
+void *funcionThreadJ1(void *parametro){
+
+}
+
+void *funcionThreadJ2(void *parametro){
+
+}
 
 void limpiarSemaforo(){
 
@@ -328,60 +350,10 @@ void leerMemoria(){
 	/* Key to shared memory */
    key_t key = ftok(FILEKEY, KEY);
    /* we create the shared memory */
-   int id_zone = shmget (key, sizeof(juego *), 0777);
+   int id_zone = shmget (key, sizeof(juego *), 0777 | IPC_CREAT);
    datos = (juego *)shmat (id_zone, NULL, 0);
 }
 
-void jugar(){
-	while(TRUE){
-		if(rol == 1){
-			datos->j1 = TRUE;
-			while(datos->j2){
-				if(datos->turno == 2){
-					datos->j1 = FALSE;
-					while(datos->turno == 2){
-
-					}
-					datos->j1 = TRUE;
-				}
-			}
-			clear();
-			panelSuperior();
-			panelInferior();
-			panelCentral();
-
-			datos->turno = 2;
-			datos->j1 = FALSE;
-		}else{
-			datos->j2 = TRUE;
-			while(datos->j1){
-				if(datos->turno == 1){
-					datos->j2 = FALSE;
-					while(datos->turno == 1){
-
-					}
-					datos->j2 = TRUE;
-				}
-			}
-			clear();
-			panelSuperior();
-			panelInferior();
-			panelCentral();
-
-			datos->turno = 1;
-			datos->j2 = FALSE;
-		}
-
-
-		usleep(100000);
-	}
-}
-
-void iniciarJuego(){
-	if(rol == 1){
-		crearMemoria();
-	}
-}
 
 void iniciarPantalla(){
   initscr();//iniciamos la pantalla
@@ -540,7 +512,7 @@ void panelSuperior(){
 
 void panelInferior(){
 	char str[2];
-	sprintf(str, "%d", datos->vidaInvasor);
+	sprintf(str, "%d", datos->vidaDefensor);
 	char texto[7];
 	strcpy(texto, "Vida: ");
 	strcat(texto, str);
@@ -564,6 +536,11 @@ void panelInferior(){
 	imprimirCentradoEntero(101 - 21/2 + i, posT, datos->puntosDefensor);
 }
 
+void moverAlien(){
+	mvprintw(5,datos->balasDefensor, "vvvvvvv");
+	mvprintw(25,datos->balasInvasor, "0000000");
+}
+
 void panelCentral(){
 	int posX = 21;
 	int posY = 7;
@@ -572,7 +549,7 @@ void panelCentral(){
 	for(i = 0; i < 12; i++){
 		 for(j = 0; j < 14; j++){
 			 if(datos->tablero[i][j] != NULL){
-				 switch(datos->tablero[i][j]->tipo){
+				 /*switch(datos->tablero[i][j]->tipo){
 					 case 1:
 					 	imprimirNormal(i*5 + posX, j + posY, "\\-1-/");
 					 	break;
@@ -592,8 +569,16 @@ void panelCentral(){
 					 case 5:
 						 imprimirNormal(i*5 + posX, j + posY, "\\-.-/");
 						 break;
+				 }*/
+				 imprimirNormal(i*5 + posX, j + posY, "\\-.-/");
+				 if(rol == 1){
+				 	datos->tablero[i][j] = NULL;
 				 }
-				 //imprimirNormal(i*5 + posX, j + posY, "h");
+			 }else{
+				 if(rol == 1){
+					 datos->tablero[i][j] = malloc(sizeof(objeto));
+				 }
+
 			 }
 		 }
 	}
@@ -605,6 +590,134 @@ void panelIzquierdo(){
 
 void panelDerecho(){
 
+}
+
+void jugar(){
+	if(rol == 1){
+		pthread_t idHilo;
+		int error;
+		error = pthread_create (&idHilo, NULL, funcionThread, NULL);
+
+		while(1){
+			datos->vidaInvasor = 6;
+			while(datos->j2){
+				if(datos->turno == 2){
+					datos->vidaInvasor = 5;
+					while(datos->turno == 2){
+
+					}
+					datos->vidaInvasor = 6;
+				}
+			}
+
+			cbreak();
+			nodelay(stdscr,1);
+ 			keypad(stdscr,1);
+ 			srand(time(NULL));
+			int tecla = getch();
+
+			switch (tecla) {
+				case 52:
+
+					datos->balasInvasor--;
+					if(datos->balasInvasor < 0){
+						datos->balasInvasor++;
+					}
+					break;
+				case 54:
+					datos->balasInvasor++;
+					if(datos->balasInvasor > 30){
+						datos->balasInvasor--;
+					}
+					break;
+			}
+
+			clear();
+			moverAlien();
+			panelSuperior();
+			panelInferior();
+			panelCentral();
+			moverAlien();
+
+			imprimirNormalEntero(1,1,datos->vidaInvasor);
+			imprimirNormalEntero(2,1,datos->j2);
+			imprimirNormalEntero(3,1,datos->turno);
+			//usleep(1000000);
+			datos->turno = 2;
+			datos->vidaInvasor = 5;
+
+			imprimirNormalEntero(1,1,datos->vidaInvasor);
+			imprimirNormalEntero(2,1,datos->j2);
+
+			imprimirNormalEntero(3,1,datos->turno);
+			refresh();
+			usleep(1000000);
+
+		}
+
+	}
+
+	if(rol == 2){
+		while(TRUE){
+			datos->j2 = TRUE;
+			while(datos->vidaInvasor == 6){
+				if(datos->turno == 1){
+					datos->j2 = FALSE;
+					while(datos->turno == 1){
+
+					}
+					datos->j2 = TRUE;
+				}
+			}
+
+
+			cbreak();
+			nodelay(stdscr,1);
+ 			keypad(stdscr,1);
+ 			srand(time(NULL));
+			int tecla = getch();
+
+			switch (tecla) {
+				case 52:
+
+					datos->balasDefensor--;
+					if(datos->balasDefensor < 0){
+						datos->balasDefensor++;
+					}
+					break;
+				case 54:
+					datos->balasDefensor++;
+					if(datos->balasDefensor > 30){
+						datos->balasDefensor--;
+					}
+					break;
+			}
+			clear();
+			panelSuperior();
+			panelInferior();
+			panelCentral();
+			moverAlien();
+
+			imprimirNormalEntero(1,1,datos->vidaInvasor);
+			imprimirNormalEntero(2,1,datos->j2);
+			imprimirNormalEntero(3,1,datos->turno);
+			//usleep(1000000);
+			datos->turno = 1;
+			datos->j2 = FALSE;
+			imprimirNormalEntero(1,1,datos->vidaInvasor);
+			imprimirNormalEntero(2,1,datos->j2);
+			imprimirNormalEntero(3,1,datos->turno);
+			refresh();
+			usleep(500000);
+		}
+	}
+
+}
+
+void iniciarJuego(){
+	if(rol == 1){
+		crearMemoria();
+	}
 }
 
 int main(int argc, char *argv[]) {
